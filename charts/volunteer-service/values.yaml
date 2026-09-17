@@ -1,0 +1,103 @@
+# Default values for volunteer-service
+
+replicaCount: 2
+
+image:
+  repository: PLACEHOLDER_ECR_URL
+  pullPolicy: Always
+  tag: PLACEHOLDER_TAG
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: volunteer-service
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8083
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Health check configuration
+healthCheck:
+  path: /health
+  port: 8083
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Environment variables
+env:
+  - name: PORT
+    value: "8083"
+  - name: AWS_REGION
+    value: us-east-1
+  - name: AWS_DYNAMODB_TABLE
+    value: SolidaryTechVolunteers
+
+# External Secrets configuration
+externalSecret:
+  enabled: true
+  secretName: volunteer-service-secrets
+  secretStore:
+    name: aws-secrets-manager
+    kind: SecretStore
+  refreshInterval: 1h
+  data:
+    - secretKey: aws-access-key-id
+      remoteRef:
+        key: solidarytech/production/aws/access-key-id
+    - secretKey: aws-secret-access-key
+      remoteRef:
+        key: solidarytech/production/aws/secret-access-key
+
+# ServiceMonitor for Prometheus
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  path: /metrics

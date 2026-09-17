@@ -1,0 +1,107 @@
+# Default values for donation-service
+
+replicaCount: 3
+
+image:
+  repository: PLACEHOLDER_ECR_URL
+  pullPolicy: Always
+  tag: PLACEHOLDER_TAG
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: donation-service
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8082
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Health check configuration
+healthCheck:
+  path: /health
+  port: 8082
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Environment variables
+env:
+  - name: PORT
+    value: "8082"
+  - name: AWS_REGION
+    value: us-east-1
+
+# External Secrets configuration
+externalSecret:
+  enabled: true
+  secretName: donation-service-secrets
+  secretStore:
+    name: aws-secrets-manager
+    kind: SecretStore
+  refreshInterval: 1h
+  data:
+    - secretKey: database-url
+      remoteRef:
+        key: solidarytech/production/donation-service/database-url
+    - secretKey: sqs-url
+      remoteRef:
+        key: solidarytech/production/sqs/queue-url
+    - secretKey: aws-access-key-id
+      remoteRef:
+        key: solidarytech/production/aws/access-key-id
+    - secretKey: aws-secret-access-key
+      remoteRef:
+        key: solidarytech/production/aws/secret-access-key
+
+# ServiceMonitor for Prometheus
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  path: /metrics

@@ -1,0 +1,20 @@
+# Production values for donation-service
+
+replicaCount: 3
+
+image:
+  repository: $(aws ssm get-parameter --name /solidarytech/production/ecr/donation-service-url --query Parameter.Value --output text)
+  pullPolicy: Always
+  tag: $(git rev-parse --short HEAD)
+
+service:
+  type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ArgoCD
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  server:
+    service:
+      type: LoadBalancer
+  repo:
+    type: git
+  dex:
+    image: quay.io/dexidp/dex:v2.37.0
+    env:
+      - name: DEX_JWT_ISSUER
+        value: argocd
+  redis:
+    image: redis:7.2.4-alpine
+  controller:
+    processors: {}
+  applicationSet:
+    replicas: 1
