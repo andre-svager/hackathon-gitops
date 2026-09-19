@@ -1,0 +1,54 @@
+# Production values for volunteer-service
+
+fullnameOverride: "volunteer-service"
+replicaCount: 2
+
+image:
+  repository: $(aws ssm get-parameter --name /solidarytech/production/ecr/volunteer-service-url --query Parameter.Value --output text)
+  pullPolicy: Always
+  tag: $(git rev-parse --short HEAD)
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8083
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+serviceAccount:
+  create: true
+  name: volunteer-service
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+healthCheck:
+  path: /health
+  port: 8083
+
+env:
+  - name: PORT
+    value: "8083"
+  - name: AWS_REGION
+    value: us-east-1
+  - name: AWS_DYNAMODB_TABLE
+    value: SolidaryTechVolunteers
+  - name: OTEL_SERVICE_NAME
+    value: volunteer-service
+
+externalSecret:
+  enabled: true
+  secretName: volunteer-service-secrets
+  data:
+    - secretKey: aws-access-key-id
+      remoteRef:
+        key: solidarytech/production/aws/access-key-id
+      envVar: AWS_ACCESS_KEY_ID
+    - secretKey: aws-secret-access-key
+      remoteRef:
+        key: solidarytech/production/aws/secret-access-key
+      envVar: AWS_SECRET_ACCESS_KEY

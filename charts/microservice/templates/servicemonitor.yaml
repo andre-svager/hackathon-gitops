@@ -2,14 +2,14 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "volunteer-service.fullname" . }}
+  name: {{ include "microservice.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "volunteer-service.labels" . | nindent 4 }}
+    {{- include "microservice.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "volunteer-service.selectorLabels" . | nindent 6 }}
+      {{- include "microservice.selectorLabels" . | nindent 6 }}
   endpoints:
   - port: http
     interval: {{ .Values.serviceMonitor.interval }}

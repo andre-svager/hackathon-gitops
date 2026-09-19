@@ -10,10 +10,10 @@ spec:
   source:
     repoURL: https://github.com/your-org/hackathon-gitops.git
     targetRevision: HEAD
-    path: charts/volunteer-service
+    path: charts/microservice
     helm:
       valueFiles:
-      - ../../environments/production/volunteer-service-values.yaml
+      - ../../environments/production/volunteer-service.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: solidarytech

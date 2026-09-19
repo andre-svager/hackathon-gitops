@@ -54,14 +54,14 @@ jobs:
         run: |
           IMAGE_TAG=${{ github.sha }}
           ECR_URL=$(aws ssm get-parameter --name /solidarytech/production/ecr/volunteer-service-url --query Parameter.Value --output text)
-          sed -i "s|repository: .*|repository: $ECR_URL|" volunteer-service-values.yaml
-          sed -i "s|tag: .*|tag: $IMAGE_TAG|" volunteer-service-values.yaml
+          sed -i "s|repository: .*|repository: $ECR_URL|" volunteer-service.yaml
+          sed -i "s|tag: .*|tag: $IMAGE_TAG|" volunteer-service.yaml
 
       - name: Commit and push changes
         working-directory: gitops
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add environments/production/volunteer-service-values.yaml
+          git add environments/production/volunteer-service.yaml
           git commit -m "Update volunteer-service image tag to ${{ github.sha }}"
           git push

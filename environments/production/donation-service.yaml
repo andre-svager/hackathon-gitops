@@ -1,0 +1,60 @@
+# Production values for donation-service
+
+fullnameOverride: "donation-service"
+replicaCount: 3
+
+image:
+  repository: $(aws ssm get-parameter --name /solidarytech/production/ecr/donation-service-url --query Parameter.Value --output text)
+  pullPolicy: Always
+  tag: $(git rev-parse --short HEAD)
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8082
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+serviceAccount:
+  create: true
+  name: donation-service
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+healthCheck:
+  path: /health
+  port: 8082
+
+env:
+  - name: PORT
+    value: "8082"
+  - name: AWS_REGION
+    value: us-east-1
+  - name: OTEL_SERVICE_NAME
+    value: donation-service
+
+externalSecret:
+  enabled: true
+  secretName: donation-service-secrets
+  data:
+    - secretKey: database-url
+      remoteRef:
+        key: solidarytech/production/donation-service/database-url
+      envVar: DATABASE_URL
+    - secretKey: sqs-url
+      remoteRef:
+        key: solidarytech/production/sqs/queue-url
+      envVar: AWS_SQS_URL
+    - secretKey: aws-access-key-id
+      remoteRef:
+        key: solidarytech/production/aws/access-key-id
+      envVar: AWS_ACCESS_KEY_ID
+    - secretKey: aws-secret-access-key
+      remoteRef:
+        key: solidarytech/production/aws/secret-access-key
+      envVar: AWS_SECRET_ACCESS_KEY

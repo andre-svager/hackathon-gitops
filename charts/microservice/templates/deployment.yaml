@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ngo-service.fullname" . }}
+  name: {{ include "microservice.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "ngo-service.labels" . | nindent 4 }}
+    {{- include "microservice.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "ngo-service.selectorLabels" . | nindent 6 }}
+      {{- include "microservice.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -18,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "ngo-service.selectorLabels" . | nindent 8 }}
+        {{- include "microservice.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "ngo-service.serviceAccountName" . }}
+      serviceAccountName: {{ include "microservice.serviceAccountName" . }}
       containers:
       - name: {{ .Chart.Name }}
         securityContext:
@@ -41,11 +41,13 @@ spec:
           value: {{ .value | quote }}
         {{- end }}
         {{- if .Values.externalSecret.enabled }}
-        - name: DATABASE_URL
+        {{- range .Values.externalSecret.data }}
+        - name: {{ .envVar | default .secretKey | upper | replace "-" "_" }}
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.externalSecret.secretName }}
-              key: database-url
+              name: {{ $.Values.externalSecret.secretName }}
+              key: {{ .secretKey }}
+        {{- end }}
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}

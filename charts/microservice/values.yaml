@@ -1,4 +1,4 @@
-# Default values for volunteer-service
+# Default values for microservice
 
 replicaCount: 2
 
@@ -14,7 +14,7 @@ fullnameOverride: ""
 serviceAccount:
   create: true
   annotations: {}
-  name: volunteer-service
+  name: ""
 
 podAnnotations: {}
 
@@ -32,7 +32,7 @@ securityContext: {}
 service:
   type: LoadBalancer
   port: 80
-  targetPort: 8083
+  targetPort: 8080
   annotations: {}
 
 resources:
@@ -59,7 +59,7 @@ affinity: {}
 # Health check configuration
 healthCheck:
   path: /health
-  port: 8083
+  port: 8080
   livenessProbe:
     initialDelaySeconds: 30
     periodSeconds: 10
@@ -72,29 +72,17 @@ healthCheck:
     failureThreshold: 3
 
 # Environment variables
-env:
-  - name: PORT
-    value: "8083"
-  - name: AWS_REGION
-    value: us-east-1
-  - name: AWS_DYNAMODB_TABLE
-    value: SolidaryTechVolunteers
+env: []
 
 # External Secrets configuration
 externalSecret:
   enabled: true
-  secretName: volunteer-service-secrets
+  secretName: ""
   secretStore:
     name: aws-secrets-manager
-    kind: SecretStore
+    kind: ClusterSecretStore
   refreshInterval: 1h
-  data:
-    - secretKey: aws-access-key-id
-      remoteRef:
-        key: solidarytech/production/aws/access-key-id
-    - secretKey: aws-secret-access-key
-      remoteRef:
-        key: solidarytech/production/aws/secret-access-key
+  data: []
 
 # ServiceMonitor for Prometheus
 serviceMonitor:

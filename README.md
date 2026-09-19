@@ -60,34 +60,27 @@ hackathon-gitops/
 ├── argocd/
 │   ├── namespace.yaml              # ArgoCD namespace
 │   └── install.yaml                # ArgoCD installation
-├── base/
-│   ├── namespace.yaml              # Application namespace
-│   └── external-secret-operator/   # External Secrets Operator
-│       ├── namespace.yaml
-│       ├── deployment.yaml
-│       ├── secretstore.yaml
-│       └── irsa.yaml
+├── external-secrets/               # External Secrets Operator
+│   ├── namespace.yaml
+│   ├── deployment.yaml
+│   └── secretstore.yaml            # ClusterSecretStore for AWS
 ├── charts/
-│   ├── ngo-service/
-│   │   ├── Chart.yaml
-│   │   ├── values.yaml
-│   │   └── templates/
-│   │       ├── deployment.yaml
-│   │       ├── service.yaml
-│   │       ├── serviceaccount.yaml
-│   │       ├── hpa.yaml
-│   │       ├── externalsecret.yaml
-│   │       ├── servicemonitor.yaml
-│   │       └── _helpers.tpl
-│   ├── donation-service/
-│   │   └── (same structure as ngo-service)
-│   └── volunteer-service/
-│       └── (same structure as ngo-service)
+│   └── microservice/               # Generic microservice chart
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       └── templates/
+│           ├── deployment.yaml
+│           ├── service.yaml
+│           ├── serviceaccount.yaml
+│           ├── hpa.yaml
+│           ├── externalsecret.yaml
+│           ├── servicemonitor.yaml
+│           └── _helpers.tpl
 ├── environments/
 │   └── production/
-│       ├── ngo-service-values.yaml
-│       ├── donation-service-values.yaml
-│       └── volunteer-service-values.yaml
+│       ├── ngo-service.yaml         # NGO service values
+│       ├── donation-service.yaml    # Donation service values
+│       └── volunteer-service.yaml   # Volunteer service values
 ├── apps/
 │   ├── ngo-service/
 │   │   └── argo-application.yaml
@@ -213,9 +206,9 @@ To manually trigger a deployment:
 # Navigate to application → Sync button
 
 # Via Helm (direct)
-helm upgrade ngo-service ./charts/ngo-service \
+helm upgrade ngo-service ./charts/microservice \
   --namespace solidarytech \
-  -f environments/production/ngo-service-values.yaml
+  -f environments/production/ngo-service.yaml
 ```
 
 ## 📊 Monitoring
@@ -329,10 +322,10 @@ aws ecr describe-images --repository-name ngo-service
 
 ### Scaling Configuration
 
-Edit HPA configuration in Helm values files:
+Edit HPA configuration in service-specific values files:
 
 ```yaml
-# environments/production/ngo-service-values.yaml
+# environments/production/ngo-service.yaml
 autoscaling:
   enabled: true
   minReplicas: 2
@@ -343,10 +336,10 @@ autoscaling:
 
 ### Resource Limits
 
-Edit resource limits in Helm values files:
+Edit resource limits in service-specific values files:
 
 ```yaml
-# charts/ngo-service/values.yaml
+# environments/production/ngo-service.yaml
 resources:
   requests:
     cpu: 500m
@@ -358,10 +351,10 @@ resources:
 
 ### Health Checks
 
-Modify health check probes in Helm values files:
+Modify health check probes in service-specific values files:
 
 ```yaml
-# charts/ngo-service/values.yaml
+# environments/production/ngo-service.yaml
 healthCheck:
   path: /health
   port: 8081
@@ -377,13 +370,53 @@ healthCheck:
     failureThreshold: 3
 ```
 
+### Adding a New Service
+
+To add a new microservice using the generic chart:
+
+1. Create a new values file in `environments/production/`:
+   ```bash
+   cp environments/production/ngo-service.yaml environments/production/new-service.yaml
+   ```
+
+2. Edit the values file with service-specific configuration:
+   ```yaml
+   fullnameOverride: "new-service"
+   service:
+     targetPort: 8084
+   image:
+     repository: <ecr-url>
+   externalSecret:
+     secretName: new-service-secrets
+     data:
+       - secretKey: my-secret
+         remoteRef:
+           key: solidarytech/production/new-service/my-secret
+   ```
+
+3. Create an ArgoCD Application in `apps/new-service/argo-application.yaml`:
+   ```yaml
+   apiVersion: argoproj.io/v1alpha1
+   kind: Application
+   metadata:
+     name: new-service
+     namespace: argocd
+   spec:
+     source:
+       path: charts/microservice
+       helm:
+         valueFiles:
+         - ../../environments/production/new-service.yaml
+   ```
+
 ### Environment-Specific Values
 
 Create new environment values files in `environments/` directory:
 
 ```bash
 # Example for staging
-cp environments/production/ngo-service-values.yaml environments/staging/ngo-service-values.yaml
+mkdir environments/staging
+cp environments/production/ngo-service.yaml environments/staging/ngo-service.yaml
 # Edit the values for staging environment
 ```
 

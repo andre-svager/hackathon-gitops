@@ -1,5 +1,6 @@
 # Production values for ngo-service
 
+fullnameOverride: "ngo-service"
 replicaCount: 2
 
 image:
@@ -9,8 +10,14 @@ image:
 
 service:
   type: LoadBalancer
+  port: 80
+  targetPort: 8081
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+serviceAccount:
+  create: true
+  name: ngo-service
 
 autoscaling:
   enabled: true
@@ -18,3 +25,22 @@ autoscaling:
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 80
+
+healthCheck:
+  path: /health
+  port: 8081
+
+env:
+  - name: PORT
+    value: "8081"
+  - name: OTEL_SERVICE_NAME
+    value: ngo-service
+
+externalSecret:
+  enabled: true
+  secretName: ngo-service-secrets
+  data:
+    - secretKey: database-url
+      remoteRef:
+        key: solidarytech/production/ngo-service/database-url
+      envVar: DATABASE_URL

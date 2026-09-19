@@ -38,15 +38,13 @@ echo -e "${GREEN}✅ kubectl configured${NC}"
 # Create namespaces
 echo "🏗️  Creating namespaces..."
 kubectl apply -f argocd/namespace.yaml
-kubectl apply -f base/namespace.yaml
-kubectl apply -f base/external-secret-operator/namespace.yaml
+kubectl apply -f external-secrets/namespace.yaml
 echo -e "${GREEN}✅ Namespaces created${NC}"
 
 # Install External Secrets Operator
 echo "🔐 Installing External Secrets Operator..."
-kubectl apply -f base/external-secret-operator/deployment.yaml
-kubectl apply -f base/external-secret-operator/secretstore.yaml
-kubectl apply -f base/external-secret-operator/irsa.yaml
+kubectl apply -f external-secrets/deployment.yaml
+kubectl apply -f external-secrets/secretstore.yaml
 echo -e "${GREEN}✅ External Secrets Operator installed${NC}"
 
 # Wait for External Secrets Operator to be ready

@@ -1,12 +1,11 @@
 apiVersion: v2
-name: ngo-service
-description: A Helm chart for SolidaryTech NGO Service
+name: microservice
+description: A generic Helm chart for SolidaryTech microservices
 type: application
 version: 1.0.0
 appVersion: "1.0"
 keywords:
   - solidarytech
-  - ngo
-  - flask
+  - microservice
 maintainers:
   - name: SolidaryTech Team
