@@ -1,0 +1,41 @@
+name: Validate GitOps pull request
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'charts/**'
+      - 'environments/**'
+      - '.github/workflows/validate-gitops-pr.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-gitops:
+    name: validate-gitops
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Validate production values
+        run: |
+          for values_file in environments/production/*.yaml; do
+            grep -Eq '^  repository: [^$[:space:]]+$' "$values_file"
+            grep -Eq '^  tag: [0-9a-f]{40}$' "$values_file"
+            ! grep -Eq '\$\(|PLACEHOLDER|git rev-parse|aws ssm' "$values_file"
+          done
+
+      - name: Lint and render services
+        run: |
+          for service in donation-service ngo-service volunteer-service; do
+            helm lint charts/microservice \
+              -f "environments/production/${service}.yaml"
+            helm template "$service" charts/microservice \
+              -f "environments/production/${service}.yaml" >/dev/null
+          done

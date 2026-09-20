@@ -89,6 +89,7 @@ hackathon-gitops/
 │   └── volunteer-service/
 │       └── argo-application.yaml
 ├── .github/workflows/
+│   ├── validate-gitops-pr.yml
 │   ├── deploy-ngo-service.yml
 │   ├── deploy-donation-service.yml
 │   └── deploy-volunteer-service.yml
@@ -187,12 +188,51 @@ Open https://localhost:8080 in your browser.
 
 ### Workflow
 
-1. **Code Push** - Developer pushes code to `stage5` repository
-2. **GitHub Actions** - CI pipeline triggers on push to main branch
-3. **Build & Push** - Docker image is built and pushed to ECR with git SHA tag
-4. **Update GitOps** - Helm values file is automatically updated with new image tag
-5. **ArgoCD Sync** - ArgoCD detects the change and syncs Helm release
-6. **Rolling Update** - Kubernetes performs rolling update of pods
+The application repository (`hackathon-services`) owns testing, image building, scanning, and ECR publishing. This GitOps repository owns deployment configuration and ArgoCD reconciliation.
+
+1. **Source CI** - A change to a service on `main` starts its services workflow.
+2. **Build & Push** - The workflow builds and scans the image, then pushes an immutable full commit SHA tag to ECR.
+3. **Create GitOps PR** - The services workflow updates only `environments/production/<service>.yaml` and opens a pull request in this repository.
+4. **Show PR Link** - The services workflow finishes after creating the PR and exposes a clickable GitOps PR link in its job summary. It does not wait for or invoke GitOps validation.
+5. **Validate GitOps PR** - `validate-gitops-pr.yml` independently validates concrete ECR values and renders every Helm release.
+6. **Review and Merge** - GitHub branch protection requires the `validate-gitops` check to pass before `main` can receive the change.
+7. **ArgoCD Sync** - After merge, ArgoCD detects the GitOps change and syncs the exact image SHA to EKS.
+
+### Example: NGO service deployment
+
+For a source commit `abc123...` changing `ngo-service`:
+
+```text
+hackathon-services/ngo-service change
+  -> ci-ngo.yml
+  -> ci-python-reusable.yml
+  -> build and scan ngo-service:abc123...
+  -> push 621996700064.dkr.ecr.us-east-1.amazonaws.com/ngo-service:abc123...
+  -> open GitOps PR
+```
+
+The PR changes only the image tag in `environments/production/ngo-service.yaml`:
+
+```yaml
+image:
+  repository: 621996700064.dkr.ecr.us-east-1.amazonaws.com/ngo-service
+  tag: abc123...
+```
+
+The GitOps PR workflow then runs `validate-gitops`, which checks the full SHA tag and runs `helm lint` and `helm template`. If branch protection is configured correctly, the PR cannot merge until that check passes. Once merged, ArgoCD deploys the image. The services pipeline has already finished; the repositories communicate through the PR and its link, not through a synchronous workflow dependency.
+
+### GitOps branch protection
+
+Configure branch protection for the `main` branch in GitHub repository settings:
+
+- Require a pull request before merging.
+- Require status checks to pass before merging.
+- Select the exact check: `validate-gitops`.
+- Require branches to be up to date before merging.
+- Restrict direct pushes to `main` to trusted administrators or automation only.
+- Dismiss stale approvals when new commits are pushed, if reviews are required.
+
+The branch protection rule is a GitHub repository setting, not a Kubernetes or ArgoCD setting. The services pipeline creates the PR but does not decide whether it is mergeable. The GitOps repository's own workflow and branch protection make that decision independently.
 
 ### Manual Deployment
 

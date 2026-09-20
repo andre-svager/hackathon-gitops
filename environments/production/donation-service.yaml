@@ -4,9 +4,9 @@ fullnameOverride: "donation-service"
 replicaCount: 3
 
 image:
-  repository: $(aws ssm get-parameter --name /solidarytech/production/ecr/donation-service-url --query Parameter.Value --output text)
+  repository: 621996700064.dkr.ecr.us-east-1.amazonaws.com/donation-service
   pullPolicy: Always
-  tag: $(git rev-parse --short HEAD)
+  tag: e60493b1562c1151f334603af42fce50703ea46d
 
 service:
   type: LoadBalancer
