@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-collector
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/andre-svager/hackathon-gitops.git
+    chart: opentelemetry-collector
+    # Run: helm search repo open-telemetry/opentelemetry-collector
+    # and put the latest version here before applying.
+    targetRevision: "0.173.1"
+    helm:
+      valuesObject:
+        # "deployment" = 1 pod total, cheapest option for hackathon traffic.
+        # ("daemonset" would run 1 pod per node instead - only needed if
+        # you're collecting host-level telemetry, not just app traces.)
+        mode: deployment
+        image:
+          repository: otel/opentelemetry-collector-contrib
+        # Point this at wherever you're exporting traces:
+        # - Prometheus (already installed) for metrics
+        # - Loki (already installed) for logs
+        # - Datadog/New Relic OTLP endpoint for APM traces
+        # Edit config.exporters / config.service.pipelines here once your
+        # services are instrumented and you know the real endpoints.
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

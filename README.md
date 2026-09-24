@@ -10,7 +10,6 @@ This repository contains the GitOps configuration for deploying the SolidaryTech
 - **Helm** for package management and configuration
 - **AWS ECR** for container registry
 - **AWS Secrets Manager** for secrets management
-- **External Secrets Operator** for Kubernetes secrets synchronization
 - **Prometheus ServiceMonitors** for observability
 - **Horizontal Pod Autoscaling** for automatic scaling
 
@@ -59,11 +58,7 @@ This repository contains the GitOps configuration for deploying the SolidaryTech
 hackathon-gitops/
 ├── argocd/
 │   ├── namespace.yaml              # ArgoCD namespace
-│   └── install.yaml                # ArgoCD installation
-├── external-secrets/               # External Secrets Operator
-│   ├── namespace.yaml
-│   ├── deployment.yaml
-│   └── secretstore.yaml            # ClusterSecretStore for AWS
+│   └── install.yaml                 # Official ArgoCD installation reference
 ├── charts/
 │   └── microservice/               # Generic microservice chart
 │       ├── Chart.yaml
@@ -73,7 +68,6 @@ hackathon-gitops/
 │           ├── service.yaml
 │           ├── serviceaccount.yaml
 │           ├── hpa.yaml
-│           ├── externalsecret.yaml
 │           ├── servicemonitor.yaml
 │           └── _helpers.tpl
 ├── environments/
@@ -139,6 +133,8 @@ solidarytech/production/aws/access-key-id
 solidarytech/production/aws/secret-access-key
 ```
 
+Create these values in the `us-east-1` region. The bootstrap script validates all four secret names and the SQS SSM parameter before changing the cluster. Existing secrets with different names, such as `devops/app/ngo`, are not used automatically because their structure and purpose are different.
+
 ## 🚀 Quick Start
 
 ### 1. Clone the Repository
@@ -161,10 +157,28 @@ chmod +x bootstrap.sh
 ./bootstrap.sh
 ```
 
+**Environment Variables:**
+
+The bootstrap script supports the following optional environment variables:
+
+- `AWS_REGION` - AWS region (default: `us-east-1`)
+- `GITOPS_REPO_URL` - GitOps repository URL (default: `https://github.com/andre-svager/hackathon-gitops.git`)
+- `DRY_RUN` - Set to `true` to preview changes without applying (default: `false`)
+
+Example with custom settings:
+```bash
+AWS_REGION=us-west-2 GITOPS_REPO_URL=https://github.com/your-org/hackathon-gitops.git ./bootstrap.sh
+```
+
+Dry run mode:
+```bash
+DRY_RUN=true ./bootstrap.sh
+```
+
 The bootstrap script will:
 - Configure kubectl for your EKS cluster
 - Create necessary namespaces
-- Install External Secrets Operator
+- Create Kubernetes Secrets from AWS-managed values
 - Install ArgoCD
 - Create ArgoCD applications
 - Sync applications to the cluster
@@ -272,8 +286,8 @@ kubectl get svc -n solidarytech
 # Check HPA status
 kubectl get hpa -n solidarytech
 
-# Check External Secrets
-kubectl get externalsecrets -n solidarytech
+# Check application Secrets
+kubectl get secrets -n solidarytech
 ```
 
 ### Prometheus Metrics
@@ -287,9 +301,9 @@ kubectl get servicemonitors -n solidarytech
 
 ## 🔐 Secrets Management
 
-### External Secrets Operator
+### Bootstrap-generated Kubernetes Secrets
 
-The External Secrets Operator synchronizes secrets from AWS Secrets Manager to Kubernetes secrets.
+The bootstrap script reads AWS Secrets Manager and SSM values, then creates or updates ordinary Kubernetes Secrets before ArgoCD applications are installed. The applications consume those Kubernetes Secrets as environment variables.
 
 **Secret Mapping:**
 
@@ -297,17 +311,41 @@ The External Secrets Operator synchronizes secrets from AWS Secrets Manager to K
 |-------------------|---------------------------|
 | ngo-service-secrets | solidarytech/production/ngo-service/database-url |
 | donation-service-secrets | solidarytech/production/donation-service/database-url, sqs-url, aws credentials |
-| volunteer-service-secrets | solidarytech/production/aws/access-key-id, aws-secret-access-key |
+| volunteer-service-secrets | solidarytech/production/aws/access-key-id, aws-secret-access-key; table name from `/solidarytech/production/dynamodb/table-name` |
 
 ### Manual Secret Refresh
 
-To manually refresh secrets:
+To manually refresh secrets after rotating AWS values, rerun the bootstrap script:
 
 ```bash
-kubectl annotate externalsecret ngo-service-secrets -n solidarytech force-sync=$(date +%s)
+./bootstrap.sh
 ```
 
 ## 🛠️ Troubleshooting
+
+### ArgoCD Applications Not Created
+
+If ArgoCD applications are not created after running the bootstrap script:
+
+```bash
+# Check if applications exist
+kubectl get applications -n argocd
+
+# Check bootstrap script logs for errors
+# The script validates the GitOps repository URL before creating applications
+
+# Verify the repository URL in Application manifests
+grep repoURL apps/*/argo-application.yaml
+
+# Manually apply an application if needed
+kubectl apply -f apps/ngo-service/argo-application.yaml
+```
+
+**Common causes:**
+- Incorrect GitOps repository URL in Application manifests
+- GitOps repository is not publicly accessible or authentication is required
+- ArgoCD is not fully installed or ready
+- Missing required AWS secrets or SSM parameters
 
 ### ArgoCD Application Not Syncing
 
@@ -322,17 +360,14 @@ kubectl patch application ngo-service -n argocd --type merge -p '{"spec":{"sync"
 kubectl logs -n argocd deployment/argocd-application-controller
 ```
 
-### External Secrets Not Syncing
+### Kubernetes Secrets Not Available
 
 ```bash
-# Check ExternalSecret status
-kubectl get externalsecret ngo-service-secrets -n solidarytech -o yaml
+# Check application Secrets
+kubectl get secrets -n solidarytech
 
-# Check External Secrets Operator logs
-kubectl logs -n external-secrets deployment/external-secrets
-
-# Verify SecretStore configuration
-kubectl get secretstore aws-secrets-manager -n solidarytech -o yaml
+# Recreate them from AWS Secrets Manager and SSM
+./bootstrap.sh
 ```
 
 ### Pods Not Starting
@@ -347,6 +382,30 @@ kubectl logs <pod-name> -n solidarytech
 # Check events
 kubectl get events -n solidarytech --sort-by='.lastTimestamp'
 ```
+
+### GitHub Actions GitOps PR Not Created
+
+If the GitOps PR is not created after pushing to the services repository:
+
+```bash
+# Check the GitHub Actions workflow logs
+# Look for the "Update GitOps image values" and "Create GitOps pull request" steps
+
+# Verify the gitops_token secret is configured in the services repository
+# The token must have write access to the GitOps repository
+
+# Verify the gitops_repository input in the workflow matches the actual repository
+# Default: andre-svager/hackathon-gitops
+
+# Check that the ECR URL SSM parameter exists
+aws ssm get-parameter --name /solidarytech/production/ecr/ngo-service-url
+```
+
+**Common causes:**
+- Missing or invalid `GITOPS_REPO_TOKEN` secret
+- GitOps repository URL mismatch in workflow configuration
+- Insufficient permissions for the GitHub token
+- ECR URL SSM parameter not created by Terraform
 
 ### Image Pull Errors
 
@@ -426,12 +485,10 @@ To add a new microservice using the generic chart:
      targetPort: 8084
    image:
      repository: <ecr-url>
-   externalSecret:
-     secretName: new-service-secrets
-     data:
-       - secretKey: my-secret
-         remoteRef:
-           key: solidarytech/production/new-service/my-secret
+   secretEnv:
+     - secretName: new-service-secrets
+       secretKey: my-secret
+       envVar: MY_SECRET
    ```
 
 3. Create an ArgoCD Application in `apps/new-service/argo-application.yaml`:
@@ -480,7 +537,6 @@ cp environments/production/ngo-service.yaml environments/staging/ngo-service.yam
 
 - [ArgoCD Documentation](https://argoproj.github.io/argo-cd/)
 - [Helm Documentation](https://helm.sh/docs/)
-- [External Secrets Operator](https://external-secrets.io/)
 - [AWS EKS Documentation](https://docs.aws.amazon.com/eks/)
 - [AWS ECR Documentation](https://docs.aws.amazon.com/ecr/)
 

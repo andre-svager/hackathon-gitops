@@ -36,11 +36,7 @@ env:
   - name: OTEL_SERVICE_NAME
     value: ngo-service
 
-externalSecret:
-  enabled: true
-  secretName: ngo-service-secrets
-  data:
-    - secretKey: database-url
-      remoteRef:
-        key: solidarytech/production/ngo-service/database-url
-      envVar: DATABASE_URL
+secretEnv:
+  - secretName: ngo-service-secrets
+    secretKey: database-url
+    envVar: DATABASE_URL

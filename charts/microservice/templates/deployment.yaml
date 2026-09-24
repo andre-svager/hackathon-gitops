@@ -39,14 +39,12 @@ spec:
         - name: {{ .name }}
           value: {{ .value | quote }}
         {{- end }}
-        {{- if .Values.externalSecret.enabled }}
-        {{- range .Values.externalSecret.data }}
-        - name: {{ .envVar | default .secretKey | upper | replace "-" "_" }}
+        {{- range .Values.secretEnv }}
+        - name: {{ .envVar }}
           valueFrom:
             secretKeyRef:
-              name: {{ $.Values.externalSecret.secretName }}
+              name: {{ .secretName }}
               key: {{ .secretKey }}
-        {{- end }}
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}

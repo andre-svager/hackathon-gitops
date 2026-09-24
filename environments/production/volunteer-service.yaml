@@ -40,15 +40,10 @@ env:
   - name: OTEL_SERVICE_NAME
     value: volunteer-service
 
-externalSecret:
-  enabled: true
-  secretName: volunteer-service-secrets
-  data:
-    - secretKey: aws-access-key-id
-      remoteRef:
-        key: solidarytech/production/aws/access-key-id
-      envVar: AWS_ACCESS_KEY_ID
-    - secretKey: aws-secret-access-key
-      remoteRef:
-        key: solidarytech/production/aws/secret-access-key
-      envVar: AWS_SECRET_ACCESS_KEY
+secretEnv:
+  - secretName: volunteer-service-secrets
+    secretKey: aws-access-key-id
+    envVar: AWS_ACCESS_KEY_ID
+  - secretName: volunteer-service-secrets
+    secretKey: aws-secret-access-key
+    envVar: AWS_SECRET_ACCESS_KEY

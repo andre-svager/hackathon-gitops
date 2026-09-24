@@ -38,23 +38,16 @@ env:
   - name: OTEL_SERVICE_NAME
     value: donation-service
 
-externalSecret:
-  enabled: true
-  secretName: donation-service-secrets
-  data:
-    - secretKey: database-url
-      remoteRef:
-        key: solidarytech/production/donation-service/database-url
-      envVar: DATABASE_URL
-    - secretKey: sqs-url
-      remoteRef:
-        key: solidarytech/production/sqs/queue-url
-      envVar: AWS_SQS_URL
-    - secretKey: aws-access-key-id
-      remoteRef:
-        key: solidarytech/production/aws/access-key-id
-      envVar: AWS_ACCESS_KEY_ID
-    - secretKey: aws-secret-access-key
-      remoteRef:
-        key: solidarytech/production/aws/secret-access-key
-      envVar: AWS_SECRET_ACCESS_KEY
+secretEnv:
+  - secretName: donation-service-secrets
+    secretKey: database-url
+    envVar: DATABASE_URL
+  - secretName: donation-service-secrets
+    secretKey: sqs-url
+    envVar: AWS_SQS_URL
+  - secretName: donation-service-secrets
+    secretKey: aws-access-key-id
+    envVar: AWS_ACCESS_KEY_ID
+  - secretName: donation-service-secrets
+    secretKey: aws-secret-access-key
+    envVar: AWS_SECRET_ACCESS_KEY

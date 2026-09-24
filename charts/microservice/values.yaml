@@ -74,15 +74,8 @@ healthCheck:
 # Environment variables
 env: []
 
-# External Secrets configuration
-externalSecret:
-  enabled: true
-  secretName: ""
-  secretStore:
-    name: aws-secrets-manager
-    kind: ClusterSecretStore
-  refreshInterval: 1h
-  data: []
+# Existing Kubernetes Secret environment mappings
+secretEnv: []
 
 # ServiceMonitor for Prometheus
 serviceMonitor:

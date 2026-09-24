@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    # Run: helm search repo prometheus-community/kube-prometheus-stack
+    # and put the latest version here before applying.
+    targetRevision: "65.5.1"
+    helm:
+      valuesObject:
+        prometheus:
+          prometheusSpec:
+            # Watch ServiceMonitor objects from ANY chart, not just this
+            # release's own Helm labels (your microservice charts create
+            # their own ServiceMonitor resources).
+            serviceMonitorSelectorNilUsesHelmValues: false
+        # Trimmed for pod-capacity reasons (t3.small = 11 pods/node).
+        # Flip these to true later if you want alerting / per-node metrics.
+        alertmanager:
+          enabled: false
+        nodeExporter:
+          enabled: false
+        kubeStateMetrics:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

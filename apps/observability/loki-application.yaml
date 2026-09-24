@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/andre-svager/hackathon-gitops.git
+    chart: loki-stack
+    # Run: helm search repo grafana/loki-stack
+    # and put the latest version here before applying.
+    targetRevision: "2.10.2"
+    helm:
+      valuesObject:
+        loki:
+          isDefaultDatasource: true
+        # Promtail ships as a DaemonSet - one pod per node, unavoidable,
+        # it's how logs actually get collected from every node.
+        promtail:
+          enabled: true
+        # Disabled: kube-prometheus-stack (prometheus-application.yaml)
+        # already installs Grafana. Installing it twice would conflict.
+        grafana:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

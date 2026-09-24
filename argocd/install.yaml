@@ -1,22 +1,13 @@
-apiVersion: argoproj.io/v1alpha1
-kind: ArgoCD
+# Argo CD is installed from the official upstream manifest in bootstrap.sh.
+#
+# The upstream manifest is applied with server-side apply because its CRDs are
+# too large for kubectl's client-side last-applied annotation:
+# https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+#
+# Keep this file as the local installation reference. Do not apply it directly;
+# run ../bootstrap.sh from the hackathon-gitops directory.
+apiVersion: v1
+kind: List
 metadata:
-  name: argocd
-  namespace: argocd
-spec:
-  server:
-    service:
-      type: LoadBalancer
-  repo:
-    type: git
-  dex:
-    image: quay.io/dexidp/dex:v2.37.0
-    env:
-      - name: DEX_JWT_ISSUER
-        value: argocd
-  redis:
-    image: redis:7.2.4-alpine
-  controller:
-    processors: {}
-  applicationSet:
-    replicas: 1
+  name: argocd-install-reference
+items: []
