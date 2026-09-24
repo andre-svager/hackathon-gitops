@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/andre-svager/hackathon-gitops.git
+    repoURL: https://grafana.github.io/helm-charts
     chart: loki-stack
     # Run: helm search repo grafana/loki-stack
     # and put the latest version here before applying.
