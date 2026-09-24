@@ -8,11 +8,11 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://prometheus-community.github.io/helm-charts
+    repoURL: https://github.com/andre-svager/hackathon-gitops.git
     chart: kube-prometheus-stack
     # Run: helm search repo prometheus-community/kube-prometheus-stack
     # and put the latest version here before applying.
-    targetRevision: "65.5.1"
+    targetRevision: "91.5.1"
     helm:
       valuesObject:
         prometheus:
