@@ -4,9 +4,9 @@ fullnameOverride: "volunteer-service"
 replicaCount: 2
 
 image:
-  repository: 621996700064.dkr.ecr.us-east-1.amazonaws.com/donation-service
+  repository: 621996700064.dkr.ecr.us-east-1.amazonaws.com/volunteer-service
   pullPolicy: Always
-  tag: b856c3e31330a7af387d43e95bf3df2ac2d070bd
+  tag: 40f5a118accc1d9d7592bc9b863f29423e71816b
 
 service:
   type: LoadBalancer
