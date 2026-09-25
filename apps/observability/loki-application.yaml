@@ -16,7 +16,7 @@ spec:
     helm:
       valuesObject:
         loki:
-          isDefaultDatasource: false
+          isDefault: false
         # Promtail ships as a DaemonSet - one pod per node, unavoidable,
         # it's how logs actually get collected from every node.
         promtail:
