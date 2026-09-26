@@ -1,3 +1,17 @@
+TODO
+
+My recommendation given your timeline
+
+Keep Metrics Server — it's cheap (already written, one pod, no known conflicts with what's already running) and gives you a strong, easy demo beat for the SRE section of your pitch ("here's our HPA scaling donation-service — our Hot Path — from 3 to 15 replicas as load increases, no manual intervention"). That's a better story than static rightsizing alone, and it costs you nothing extra to implement since it's already sitting there ready to apply.
+
+Want me to move on now to mapping out the rest of the rubric's 5 fronts (SRE/SLOs, FinOps tagging, ITSM/AIOps, DR) against what you've already built today, so we have a clear checklist of what's done vs. what's still needed before the deadline?
+
+
+MERTICS-SERVER
+
+
+
+
 # 🚀 SolidaryTech GitOps Infrastructure
 
 Complete GitOps solution for deploying SolidaryTech microservices to Kubernetes using ArgoCD and Helm.

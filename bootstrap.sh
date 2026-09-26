@@ -148,8 +148,8 @@ echo -e "${GREEN}✅ ArgoCD installation started${NC}"
 
 # Wait for ArgoCD to be ready
 echo "⏳ Waiting for ArgoCD to be ready..."
-kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
-kubectl wait --for=condition=available --timeout=300s deployment/argocd-repo-server -n argocd
+kubectl wait --for=condition=available --timeout=600s deployment/argocd-server -n argocd
+kubectl wait --for=condition=available --timeout=600s deployment/argocd-repo-server -n argocd
 kubectl rollout status --timeout=600s statefulset/argocd-application-controller -n argocd
 echo -e "${GREEN}✅ ArgoCD ready${NC}"
 
@@ -217,9 +217,9 @@ echo -e "${GREEN}✅ ArgoCD applications created${NC}"
 # Wait for applications to sync
 if [ "$DRY_RUN" = "false" ]; then
     echo "⏳ Waiting for applications to sync..."
-    kubectl wait --for=condition=healthy --timeout=300s application/ngo-service -n argocd || true
-    kubectl wait --for=condition=healthy --timeout=300s application/donation-service -n argocd || true
-    kubectl wait --for=condition=healthy --timeout=300s application/volunteer-service -n argocd || true
+    kubectl wait --for=condition=healthy --timeout=600s application/ngo-service -n argocd || true
+    kubectl wait --for=condition=healthy --timeout=600s application/donation-service -n argocd || true
+    kubectl wait --for=condition=healthy --timeout=600s application/volunteer-service -n argocd || true
     echo -e "${GREEN}✅ Applications synced${NC}"
     
     # Verify applications were created successfully
