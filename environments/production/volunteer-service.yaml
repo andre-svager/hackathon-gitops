@@ -62,6 +62,8 @@ env:
     value: SolidaryTechVolunteers
   - name: OTEL_SERVICE_NAME
     value: volunteer-service
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: http://otel-collector:4318  
 
 secretEnv:
   - secretName: volunteer-service-secrets

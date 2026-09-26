@@ -58,6 +58,9 @@ env:
     value: "8081"
   - name: OTEL_SERVICE_NAME
     value: ngo-service
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: http://otel-collector:4318
+
 
 secretEnv:
   - secretName: ngo-service-secrets

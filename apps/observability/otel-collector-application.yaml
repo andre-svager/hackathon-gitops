@@ -21,12 +21,23 @@ spec:
         mode: deployment
         image:
           repository: otel/opentelemetry-collector-contrib
-        # Point this at wherever you're exporting traces:
-        # - Prometheus (already installed) for metrics
-        # - Loki (already installed) for logs
-        # - Datadog/New Relic OTLP endpoint for APM traces
-        # Edit config.exporters / config.service.pipelines here once your
-        # services are instrumented and you know the real endpoints.
+        config:
+          exporters:
+            datadog:
+              api:
+                key: ${env:DD_API_KEY}
+          service:
+            pipelines:
+              traces:
+                exporters: [datadog]
+              metrics:
+                exporters: [datadog]
+        extraEnvs:
+          - name: DD_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: datadog-api-key
+                key: api-key
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring

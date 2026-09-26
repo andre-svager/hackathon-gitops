@@ -60,6 +60,10 @@ env:
     value: us-east-1
   - name: OTEL_SERVICE_NAME
     value: donation-service
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: http://otel-collector:4318
+    # TODO: Change this to the actual OTLP endpoint
+    # value: "http://otel-collector-opentelemetry-collector.monitoring:4318"
 
 secretEnv:
   - secretName: donation-service-secrets
