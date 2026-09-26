@@ -22,15 +22,25 @@ spec:
         image:
           repository: otel/opentelemetry-collector-contrib
         config:
+          processors:
+            batch:
+              timeout: 10s
+          connectors:
+            datadog/connector: {}
           exporters:
             datadog:
               api:
                 key: ${env:DD_API_KEY}
+                site: datadoghq.com
           service:
             pipelines:
               traces:
-                exporters: [datadog]
+                receivers: [otlp]
+                processors: [batch]
+                exporters: [datadog/connector, datadog]
               metrics:
+                receivers: [otlp]
+                processors: [batch]
                 exporters: [datadog]
         extraEnvs:
           - name: DD_API_KEY
