@@ -6,7 +6,7 @@ replicaCount: 2
 image:
   repository: 621996700064.dkr.ecr.us-east-1.amazonaws.com/volunteer-service
   pullPolicy: Always
-  tag: 40f5a118accc1d9d7592bc9b863f29423e71816b
+  tag: 88638f82ff18ea8785b0edf24cb5864027f3ce94
 
 service:
   type: LoadBalancer
