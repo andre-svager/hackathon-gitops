@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-server
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/metrics-server
+    chart: metrics-server
+    # IMPORTANT: verify this is a real published version before applying -
+    # today's session hit multiple failures from guessed chart versions.
+    # Run this first and paste the real version in:
+    #   helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server
+    #   helm repo update
+    #   helm search repo metrics-server/metrics-server --versions | head -3
+    targetRevision: "3.12.2"
+    helm:
+      valuesObject:
+        # EKS-specific: kubelet serving certs on EKS nodes are commonly
+        # self-signed / not in the cluster CA bundle, which makes
+        # metrics-server crash-loop on TLS verification by default.
+        # This is the GitOps-native equivalent of the manual
+        # `kubectl patch deployment metrics-server ... --kubelet-insecure-tls`
+        # fix applied by hand earlier today.
+        args:
+          - --kubelet-insecure-tls
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -15,6 +15,8 @@ spec:
     targetRevision: "91.5.1"
     helm:
       valuesObject:
+        grafana:
+          adminPassword: "Hackathon2026x"
         prometheus:
           prometheusSpec:
             # Watch ServiceMonitor objects from ANY chart, not just this
