@@ -39,7 +39,7 @@ spec:
                 processors: [batch]
                 exporters: [datadog/connector, datadog]
               metrics:
-                receivers: [otlp]
+                receivers: [otlp, datadog/connector]
                 processors: [batch]
                 exporters: [datadog]
         extraEnvs:
