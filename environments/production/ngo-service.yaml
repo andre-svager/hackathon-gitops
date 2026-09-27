@@ -31,12 +31,12 @@ healthCheck:
   port: 8081
   livenessProbe:
     initialDelaySeconds: 10
-    periodSeconds: 15
+    periodSeconds: 55
     timeoutSeconds: 5
     failureThreshold: 3
   readinessProbe:
     initialDelaySeconds: 5
-    periodSeconds: 10
+    periodSeconds: 20
     timeoutSeconds: 5
     failureThreshold: 3
 

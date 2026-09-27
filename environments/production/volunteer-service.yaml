@@ -31,14 +31,14 @@ healthCheck:
   port: 8083
   livenessProbe:
     initialDelaySeconds: 10
-    periodSeconds: 15
-    timeoutSeconds: 5
-    failureThreshold: 3
+    periodSeconds: 45
+    timeoutSeconds: 10
+    failureThreshold: 5
   readinessProbe:
-    initialDelaySeconds: 5
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 3
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    timeoutSeconds: 10
+    failureThreshold: 5
 
 resources:
   requests:
