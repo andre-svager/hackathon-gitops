@@ -1,22 +1,16 @@
-TODO
+# 🚀 SolidaryTech
 
-My recommendation given your timeline
+## 📋 Presentation Overview
 
-Keep Metrics Server — it's cheap (already written, one pod, no known conflicts with what's already running) and gives you a strong, easy demo beat for the SRE section of your pitch ("here's our HPA scaling donation-service — our Hot Path — from 3 to 15 replicas as load increases, no manual intervention"). That's a better story than static rightsizing alone, and it costs you nothing extra to implement since it's already sitting there ready to apply.
-
-Want me to move on now to mapping out the rest of the rubric's 5 fronts (SRE/SLOs, FinOps tagging, ITSM/AIOps, DR) against what you've already built today, so we have a clear checklist of what's done vs. what's still needed before the deadline?
-
-
-MERTICS-SERVER
-
-
+- **PLANO DE CONTINUIDADE NEGOCIO** - [PCN.md](PCN.md)
+- **FINOPS - Finnacial Strategy** - [finops-cost-forecast.md](finops-cost-forecast.md)
+- **ITSM / AIOps — Incident Predictive Management** - [itsm-aiops-incident-lifecycle.md](itsm-aiops-incident-lifecycle.md)
+- **ARCHTECTURE -** - [GITOPS](https://github.com/andre-svager/hackathon-gitops) |
+ [IAC](https://github.com/andre-svager/hackathon-iac) |
+ [SERVICES](https://github.com/andre-svager/hackathon-DCLT)
 
 
-# 🚀 SolidaryTech GitOps Infrastructure
-
-Complete GitOps solution for deploying SolidaryTech microservices to Kubernetes using ArgoCD and Helm.
-
-## 📋 Overview
+## 🏗️ GITOPS - Architecture
 
 This repository contains the GitOps configuration for deploying the SolidaryTech platform microservices to AWS EKS. It implements a production-ready GitOps workflow with:
 
@@ -27,7 +21,6 @@ This repository contains the GitOps configuration for deploying the SolidaryTech
 - **Prometheus ServiceMonitors** for observability
 - **Horizontal Pod Autoscaling** for automatic scaling
 
-## 🏗️ Architecture
 
 ```
 ┌─────────────────┐
@@ -70,11 +63,25 @@ This repository contains the GitOps configuration for deploying the SolidaryTech
 
 ```
 hackathon-gitops/
-├── argocd/
-│   ├── namespace.yaml              # ArgoCD namespace
-│   └── install.yaml                 # Official ArgoCD installation reference
-├── charts/
-│   └── microservice/               # Generic microservice chart
+├── .github/
+│   └── workflows/                    # GitHub Actions workflows
+├── apps/                             # ArgoCD Application manifests
+│   ├── donation-service/
+│   │   └── argo-application.yaml
+│   ├── ngo-service/
+│   │   └── argo-application.yaml
+│   ├── volunteer-service/
+│   │   └── argo-application.yaml
+│   └── observability/                # Observability stack applications
+│       ├── otel-collector-application.yaml
+│       ├── prometheus-application.yaml
+│       └── velero-application.yaml
+├── argocd/                           # ArgoCD installation
+│   ├── namespace.yaml
+│   └── install.yaml
+├── bootstrap.sh                      # Cluster bootstrap script
+├── charts/                           # Helm charts
+│   └── microservice/                 # Generic microservice chart
 │       ├── Chart.yaml
 │       ├── values.yaml
 │       └── templates/
@@ -84,24 +91,13 @@ hackathon-gitops/
 │           ├── hpa.yaml
 │           ├── servicemonitor.yaml
 │           └── _helpers.tpl
-├── environments/
+├── environments/                     # Environment-specific values
 │   └── production/
-│       ├── ngo-service.yaml         # NGO service values
-│       ├── donation-service.yaml    # Donation service values
-│       └── volunteer-service.yaml   # Volunteer service values
-├── apps/
-│   ├── ngo-service/
-│   │   └── argo-application.yaml
-│   ├── donation-service/
-│   │   └── argo-application.yaml
-│   └── volunteer-service/
-│       └── argo-application.yaml
-├── .github/workflows/
-│   ├── validate-gitops-pr.yml
-│   ├── deploy-ngo-service.yml
-│   ├── deploy-donation-service.yml
-│   └── deploy-volunteer-service.yml
-├── bootstrap.sh
+│       ├── ngo-service.yaml
+│       ├── donation-service.yaml
+│       └── volunteer-service.yaml
+├── grafana-solidarytech-overview.json # Grafana dashboard import
+├── PCN.md                            # Disaster Recovery Business Continuity Plan
 └── README.md
 ```
 
@@ -431,7 +427,135 @@ kubectl get secret -n solidarytech
 aws ecr describe-images --repository-name ngo-service
 ```
 
-## 🔧 Configuration
+## � Disaster Recovery (DR)
+
+### Overview
+
+SolidaryTech implements a comprehensive Disaster Recovery strategy using Velero for cluster backups and AWS native backup services for databases. See [PCN.md](PCN.md) for detailed Business Continuity Plan with RTO/RPO definitions.
+
+### Backup Strategy
+
+**Cluster Backups (Velero):**
+- **Frequency:** Daily at 2 AM UTC
+- **Retention:** 30 days
+- **Storage:** S3 bucket `solidarytech-velero-backups` (us-east-1)
+- **Content:** Kubernetes manifests, secrets, configmaps, ArgoCD applications
+
+**Database Backups (AWS Native):**
+- **RDS PostgreSQL:** 7-day automated backups with point-in-time recovery
+- **DynamoDB:** 35-day point-in-time recovery enabled
+
+### RTO/RPO Targets
+
+| System | RTO | RPO | Backup Method |
+|--------|-----|-----|--------------|
+| Donation Service | 4 hours | 15 minutes | RDS + Velero |
+| Volunteer Service | 8 hours | 1 hour | DynamoDB + Velero |
+| NGO Service | 8 hours | 1 hour | RDS + Velero |
+
+### Velero Installation
+
+Velero is deployed via ArgoCD Application in `apps/observability/velero-application.yaml`.
+
+**Prerequisites:**
+1. Create S3 bucket for Velero backups:
+   ```bash
+   aws s3 mb s3://solidarytech-velero-backups --region us-east-1
+   ```
+
+2. Create IAM role for Velero with S3 access:
+   ```bash
+   # Create IAM policy for S3 access
+   # Create IAM role trusting EKS OIDC provider
+   # Annotate Velero service account with IAM role ARN
+   ```
+
+3. Apply Velero ArgoCD Application:
+   ```bash
+   kubectl apply -f apps/observability/velero-application.yaml
+   ```
+
+### Backup Operations
+
+**List backups:**
+```bash
+velero backup get
+```
+
+**Create on-demand backup:**
+```bash
+velero backup create solidarytech-manual-$(date +%Y%m%d-%H%M%S) \
+  --include-namespaces solidarytech,monitoring,argocd
+```
+
+**View backup details:**
+```bash
+velero backup describe <backup-name>
+```
+
+### Restore Operations
+
+**Restore from backup:**
+```bash
+velero restore create --from-backup <backup-name> \
+  --namespace solidarytech
+```
+
+**Monitor restore progress:**
+```bash
+velero restore get
+velero restore logs <restore-name>
+```
+
+**Restore to different namespace (testing):**
+```bash
+velero restore create --from-backup <backup-name> \
+  --namespace-mappings solidarytech:solidarytech-test
+```
+
+### RDS Point-in-Time Recovery
+
+If RDS instance fails, restore to a specific point in time:
+
+```bash
+aws rds restore-db-instance-to-point-in-time \
+  --source-db-instance-identifier solidarytech-production-donation-db \
+  --target-db-instance-identifier solidarytech-production-donation-db-restored \
+  --restore-to-time 2026-09-26T13:00:00Z \
+  --region us-east-1
+```
+
+After restore, update the database URL in AWS Secrets Manager and redeploy services.
+
+### Testing DR Procedures
+
+**Monthly:**
+- Verify Velero backups are completing successfully
+- Check backup retention policy
+- Verify RDS backup status
+
+**Quarterly:**
+- Test Velero restore to test namespace
+- Test RDS point-in-time recovery
+- Document actual recovery times vs. RTO
+
+### DR Documentation
+
+- **PCN.md** - Complete Business Continuity Plan with detailed recovery procedures
+- **apps/observability/velero-application.yaml** - Velero deployment configuration
+- **bootstrap.sh** - Includes secret restoration for DR scenarios
+
+### Image Pull Errors
+
+```bash
+# Verify ECR credentials are configured
+kubectl get secret -n solidarytech
+
+# Check if image exists in ECR
+aws ecr describe-images --repository-name ngo-service
+```
+
+## �🔧 Configuration
 
 ### Scaling Configuration
 
