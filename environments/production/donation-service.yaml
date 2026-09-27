@@ -6,7 +6,7 @@ replicaCount: 3
 image:
   repository: 621996700064.dkr.ecr.us-east-1.amazonaws.com/donation-service
   pullPolicy: Always
-  tag: 60fedd519f1e6f1d52f2120231245ef740ad7928
+  tag: ff8187d5e466efdfb97026d63f495756d961ec25
 
 service:
   type: LoadBalancer
